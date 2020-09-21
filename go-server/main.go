@@ -9,8 +9,8 @@ import (
 	"time"
 	"strings"
 
-	"github.com/SmolyaninovVlad/mailSender"
-	"github.com/SmolyaninovVlad/structures"
+	"journal/mailSender"
+	"journal/structures"
 	"github.com/gorilla/mux"
 	"github.com/robfig/cron"
 	"go.mongodb.org/mongo-driver/bson"
@@ -58,8 +58,8 @@ func main() {
 	//инициализация mailSender
 	c := cron.New()
 	fmt.Printf("successfully: c := cron.New() \n")
-
 	c.AddFunc("@daily", func() {
+	// c.AddFunc("@every 15s", func() {
 
 		if err := mailSender.SetSender(time.Now(), client); err != nil {
 			fmt.Println("POST error : ", err)
@@ -69,8 +69,6 @@ func main() {
 	fmt.Printf("successfully:c.AddFunc(, func() {} \n")
 	//Запуск проверки полей и оповещения на почту
 	c.Start()
-	fmt.Printf("successfully: c.Start() \n")
-
 
 	router := mux.NewRouter()
 
@@ -84,11 +82,11 @@ func main() {
 		HTMLContentType: "text/html",
 	})
 
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		renderer.HTML(w, http.StatusOK, "index", nil)
-	})
-	router.HandleFunc("/createAct", CreateActEndpoint).Methods("POST", "OPTIONS")
 	router.HandleFunc("/updateAct", UpdateActEndpoint).Methods("POST", "OPTIONS")
+	router.HandleFunc("/createAct", CreateActEndpoint).Methods("POST", "OPTIONS")
+	router.HandleFunc("/createSub", CreateSubEndpoint).Methods("POST", "OPTIONS")
+	router.HandleFunc("/updateSub", UpdateSubEndpoint).Methods("POST", "OPTIONS")
+	router.HandleFunc("/deleteSub", DeleteSubEndpoint).Methods("POST", "OPTIONS")
 	router.HandleFunc("/deleteAct", DeleteActEndpoint).Methods("POST", "OPTIONS")
 	router.HandleFunc("/createAllActs", CreateAllActEndpoint).Methods("POST", "OPTIONS")
 	router.HandleFunc("/createUpdateSubdivisions", CreateUpdateAllSubdivisionsEndpoint).Methods("POST", "OPTIONS")
@@ -98,6 +96,8 @@ func main() {
 	router.HandleFunc("/senderStart", senderStartEndpoint).Methods("GET", "OPTIONS")
 	router.HandleFunc("/senderStop", senderStopEndpoint).Methods("GET", "OPTIONS")
 	router.HandleFunc("/senderSend", senderSendEndpoint).Methods("GET", "OPTIONS")
+	//Обработчик для установки признака архивности
+	router.HandleFunc("/archiveSet", archiveSetEndpoint).Methods("POST", "OPTIONS")
 
 	
 	
@@ -109,12 +109,42 @@ func main() {
 				http.FileServer(http.Dir("./static/")),
 			),
 		)
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		renderer.HTML(w, http.StatusOK, "index", nil)
+	})
 	router.Use(SetHeaders)
-	fmt.Printf("successfully:router.Use(SetHeaders) \n")
 	http.ListenAndServe(":2222", router)
-	fmt.Printf("successfully:http.ListenAndServe \n")
+	fmt.Printf("running: :2222 \n")
 
 }
+
+func archiveSetEndpoint(response http.ResponseWriter, request *http.Request){
+	response.Header().Add("content-type", "application/json")
+
+	collection := Client.Database("journalData").Collection("acts")
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+
+	update := bson.M{"$set": bson.M{"IsArchive": true}}
+
+	filter := bson.M{"IDExcel": bson.M{ "$gte": 1, "$lte": 269 } }
+
+	res, err := collection.UpdateMany(
+		ctx,
+		filter,
+		update,
+	)
+	if err != nil {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte(`{"message": "` + err.Error() + `"}`))
+		return
+	}
+	fmt.Printf("acts updated:  %+v\n")
+	json.NewEncoder(response).Encode(res)
+}
+
+
+
+
 func senderSendEndpoint(response http.ResponseWriter, request *http.Request){
 	fmt.Printf("sender manually initialized... \n")
 	if err := mailSender.SetSender(time.Now(), Client); err != nil {
@@ -249,6 +279,24 @@ func DeleteActEndpoint(response http.ResponseWriter, request *http.Request) {
 	json.NewEncoder(response).Encode(res)
 }
 
+func DeleteSubEndpoint(response http.ResponseWriter, request *http.Request) {
+	response.Header().Add("content-type", "application/json")
+	var sub structures.Subdivision
+
+	json.NewDecoder(request.Body).Decode(&sub)
+
+	collection := Client.Database("journalData").Collection("Subdivisions")
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	res, err := collection.DeleteOne(ctx, bson.M{"_id": sub.ID})
+	if err != nil {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte(`{"message": "` + err.Error() + `"}`))
+		return
+	}
+	fmt.Printf("Subdivision deleted:  %+v\n", sub)
+	json.NewEncoder(response).Encode(res)
+}
+
 func UpdateActEndpoint(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
 	var act *structures.Act
@@ -315,6 +363,62 @@ func CreateActEndpoint(response http.ResponseWriter, request *http.Request) {
 	fmt.Printf("act created:  %+v\n", act)
 	json.NewEncoder(response).Encode(answer)
 }
+
+
+func UpdateSubEndpoint(response http.ResponseWriter, request *http.Request) {
+	response.Header().Add("content-type", "application/json")
+	var Subdivision *structures.Subdivision
+	json.NewDecoder(request.Body).Decode(&Subdivision)
+
+
+	collection := Client.Database("journalData").Collection("Subdivisions")
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+
+	Subdivision.Name = Subdivision.Name
+	Subdivision.HeadName = Subdivision.HeadName
+	Subdivision.Email = Subdivision.Email
+	
+
+	update := bson.M{"$set": Subdivision}
+
+	filter := bson.M{"_id": Subdivision.ID}
+
+	res, err := collection.UpdateOne(
+		ctx,
+		filter,
+		update,
+	)
+
+	if err != nil {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte(`{"message": "` + err.Error() + `"}`))
+		return
+	}
+	fmt.Printf("Subdivision updated:  %+v\n", Subdivision)
+	json.NewEncoder(response).Encode(res)
+}
+
+func CreateSubEndpoint(response http.ResponseWriter, request *http.Request) {
+	var Subdivision *structures.Subdivision
+
+	json.NewDecoder(request.Body).Decode(&Subdivision)
+
+	collection := Client.Database("journalData").Collection("Subdivisions")
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+
+	res, err := collection.InsertOne(ctx, Subdivision)
+
+	if err != nil {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte(`{"message": "` + err.Error() + `"}`))
+		return
+	}
+
+	answer := bson.M{"InsertedID": res.InsertedID}
+	fmt.Printf("Subdivision created:  %+v\n", Subdivision)
+	json.NewEncoder(response).Encode(answer)
+}
+
 
 func CreateAllActEndpoint(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add("content-type", "application/json")
@@ -406,6 +510,7 @@ func CreateUpdateAllSubdivisionsEndpoint(response http.ResponseWriter, request *
 }
 
 func GetSubdivisionsEndpoint(response http.ResponseWriter, request *http.Request) {
+	fmt.Printf("all subdivisions reloaded %+v\n" )
 	response.Header().Add("content-type", "application/json")
 	var subdivisions []structures.Subdivision
 	collection := Client.Database("journalData").Collection("Subdivisions")

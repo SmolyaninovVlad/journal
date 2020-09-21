@@ -22,11 +22,11 @@ const options = {
   offset: '30px',
   transition: 'scale'
 }
-
+// history.listen((location, action) => {});
 const Root = () => (
     <Provider store={store}>        
         <AlertProvider template={AlertTemplate} {...options}>
-            <AlertComp/>        
+            <AlertComp/>  
             <App />
         </AlertProvider>
     </Provider>

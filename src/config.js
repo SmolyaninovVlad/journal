@@ -1,3 +1,4 @@
 export const configs = {
-    apiUrl: 'http://localhost:2222'
+    apiUrl: 'http://journal.pskb.ad'
+//     apiUrl: 'http://localhost:2222'
 }

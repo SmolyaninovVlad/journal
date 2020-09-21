@@ -1,4 +1,5 @@
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export const columns =  (acts, subs) => { 
      return [
@@ -17,6 +18,12 @@ export const columns =  (acts, subs) => {
             } ,
             headerStyle: (colum, colIndex) => {
                 return { width: '50px'};
+            },
+            formatter: (cell) => {
+                return <div>
+                            <div>{cell}</div>
+                            <div className={"hiddenBottomBtn copyBtn"}><FontAwesomeIcon icon="copy" /></div>
+                        </div>
             }
         },
         {
@@ -105,10 +112,9 @@ export const columns =  (acts, subs) => {
             formatter: (cell, row) => {
                 if (subs.length>0 && cell) {
                     let Labels = []
-                    cell.forEach(element => {
-
+                    cell.forEach((element, key) => {
                         let index = subs.findIndex(el => el.id === element);
-                        if (index>=0) Labels.push(<Label data={subs[index]}/>)
+                        if (index>=0) Labels.push(<Label key = {key} data={subs[index]}/>)
                     
                     });
                     cell=Labels
@@ -121,6 +127,41 @@ export const columns =  (acts, subs) => {
         }
     ] 
     
+};
+
+export const columnsSubdivisions =  (subs) => { 
+    return [
+        {
+            dataField: "",
+            text: '№',
+            headerStyle: () => {
+                return { width: '50px', overflow: "hidden"};
+            }
+        },
+        {
+            dataField: 'id',
+            headerStyle: (colum, colIndex) => {
+                return { width: '200px'};
+            },
+            text: 'id'
+        },
+        {
+            dataField: 'label',
+            searchable: true, 
+            text: 'Наименование подразделения'
+        },
+        {
+            dataField: 'HeadName',
+            searchable: true, 
+            text: 'Начальник'
+        },
+        {
+            dataField: 'Email',
+            searchable: true, 
+            text: 'Email'
+        },
+   ] 
+   
 };
 
 function Label(props) {    

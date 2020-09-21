@@ -5,7 +5,7 @@ export function modalIsOpen(state = {}, action) {
         case "SHOW_MODAL":
             return { isOpen : true, row : action.row, rowIndex: action.rowIndex}
         case "CREATE_MODAL":
-            return { isOpen : true, row : {}, newRow: true}
+            return { isOpen : true, row : action.row? action.row : {}, newRow: true}
         case "CREATED_MODAL":
             return { isOpen : false, row : action.row, created: true}
         case "HIDE_MODAL":

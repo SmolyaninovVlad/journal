@@ -10,7 +10,71 @@ export const userService = {
     createAllActs,
     saveAct,
     createAllSubdivisions,
-    createAct
+    createAct,
+    saveSub,
+    createSub,
+    deleteSub
+};
+
+function saveSub(Subdivision){
+    const requestOptions = {
+        method: 'POST',
+        headers: fetch_headers,
+        body: JSON.stringify(Subdivision)
+    }
+    return new Promise(function(resolve, reject) {
+        fetch(`${configs.apiUrl}/updateSub`, requestOptions)
+            .then(handleResponse)
+            .then(function (response){
+                if (response.MatchedCount === 0) reject("объект не найден в базе данных") 
+                else if (response.ModifiedCount ===0)  reject("заполните необходимые поля") 
+                resolve(response);
+            })
+            .catch(function(error) {
+                if (typeof(error) === "object") error=error+""
+                reject(error); 
+            });
+    });
+};
+function createSub(Subdivision){
+    const requestOptions = {
+        method: 'POST',
+        headers: fetch_headers,
+        body: JSON.stringify(Subdivision)
+    }
+    return new Promise(function(resolve, reject) {
+        fetch(`${configs.apiUrl}/createSub`, requestOptions)
+            .then(handleResponse)
+            .then(function (response){
+                // if (response.MatchedCount === 0) reject("объект не найден в базе данных") 
+                // else if (response.ModifiedCount ===0)  reject("заполните необходимые поля") 
+                resolve(response);
+            })
+            .catch(function(error) {
+                if (typeof(error) === "object") error=error+""
+                reject(error); 
+            });
+    });
+};
+
+function deleteSub(id){
+    const requestOptions = {
+        method: 'POST',
+        headers: fetch_headers,
+        body: JSON.stringify({ "ID": id })
+    }
+    
+    return new Promise(function(resolve, reject) {
+        fetch(`${configs.apiUrl}/deleteSub`, requestOptions)
+            .then(handleResponse)
+            .then(function (response){
+                if (response.DeletedCount === 0) reject('unknown field - id')
+                resolve(response);
+            })
+            .catch(function(error) {
+                reject(error); 
+            });
+    });
 };
 
 

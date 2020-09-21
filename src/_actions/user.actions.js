@@ -62,11 +62,12 @@ function deleteAllSubdivisions(XLS){
 
 }
 
-function getSubdivisions(){
+function getSubdivisions(alert = false){
 
     return dispatch => {
         userService.Fetch_Subdivisions().then((response) => {
-            dispatch(fetchOffersSuccess(response));                       
+            dispatch(fetchOffersSuccess(response));   
+            if (alert) dispatch(alertActions.success("данные получены"));               
         })
         .catch((err) => {    
             dispatch(alertActions.error(err))

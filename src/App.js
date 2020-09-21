@@ -1,9 +1,11 @@
 import React from 'react';
 import  { Table }  from './srcTable/Table';
 // import { alertActions } from './_actions';
-// import { history } from './_helpers';
+import { history } from './_helpers';
 // import { Provider } from 'react-redux';
 // import { store } from './_helpers';
+import {BrowserRouter as Router,Switch,Route,Link} from "react-router-dom";
+import {AdminPanel} from './adminPanel';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { fas } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -20,7 +22,6 @@ class App extends React.Component {
   }
   constructor(props) {
     super(props);
-    // const { dispatch } = this.props;
     library.add(fas);
     this.state = {
       btnUp: false
@@ -28,6 +29,7 @@ class App extends React.Component {
     this.autoScroll = this.autoScroll.bind(this); 
     this.handleScroll = this.handleScroll.bind(this); 
     this.create = this.create.bind(this); 
+    history.listen((location, action) => {});
   }
 
   handleScroll(){
@@ -48,20 +50,31 @@ class App extends React.Component {
   create(){
     this.props.dispatch({type: "CREATE_MODAL"})  
   }
+
   render() {
     return (
       <div className="App container-fluid">
         <header id="header">
           <div className="container-fluid text-left">
             <div id="logo" className="pull-left">
-              <h1><span>Журнал мониторинга изменений законодательства</span></h1>
+              <h1><a href="/" className="link"><span>Журнал мониторинга изменений законодательства</span></a></h1>
               <a href="#intro"><img src="img/logo.png" alt="" title="" /></a>
             </div>
           </div>
         </header>
-        <Table/>
-        <span className="btnCreate" onClick={this.create}><FontAwesomeIcon icon="plus" /> <span>Добавить запись </span> </span>
-        {this.state.btnUp && <span className="btnUp" onClick={this.autoScroll}><FontAwesomeIcon icon="arrow-circle-up" /></span>}
+        <Router history={history}>
+          <Switch>
+            <Route path="/adminPanel">
+              <AdminPanel />
+              <span className="btnCreate" style={{width: "130px"}} onClick={this.create}><FontAwesomeIcon icon="plus" /> <span>Добавить </span> </span>
+            </Route>
+            <Route path="/">
+              <Table/>
+              <span className="btnCreate" onClick={this.create}><FontAwesomeIcon icon="plus" /> <span>Добавить запись </span> </span>
+              {this.state.btnUp && <span className="btnUp" onClick={this.autoScroll}><FontAwesomeIcon icon="arrow-circle-up" /></span>}
+            </Route>
+          </Switch>
+        </Router>
       </div>
     );  
   }

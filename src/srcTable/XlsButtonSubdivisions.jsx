@@ -3,20 +3,49 @@ import { connect } from 'react-redux';
 import { userActions} from '../_actions';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import XLSX from 'xlsx';
+import { history } from '../_helpers';
+import ReactModal from 'react-modal';
+
+const customPasswordDivStyles = {
+    content : {
+        top                   : '350px',
+        left                  : '70%',
+        right                 : 'auto',
+        bottom                : 'auto',
+        marginLeft            : '-35%',
+        width                 : '35%',
+        zIndex                : '11'
+      }
+}
 
 class XlsButtonSubdivisions extends React.Component {
 
     constructor (props) {
         super(props);
         this.state = {
-            excelBtnHover : false
+            excelBtnHover : false,
+            passwordDivOpened: false,
+            isPswd: '',
         }
         this.handleClick = this.handleClick.bind(this);    
-      
+        this.access = this.access.bind(this)
+        this.closeHandle = this.closeHandle.bind(this)
+        this.openHandle = this.openHandle.bind(this)
     }
 
     handleClick(e) {
         this.refs.fileUploader.click();
+    }
+
+    access(){
+        if (!this.refs.pswd.value) {
+            this.setState({isPswd:"Введите пароль"}) 
+            return;
+        } else if(this.refs.pswd.value!=="123456") {
+            this.setState({isPswd:"Неверный пароль"})
+            return;
+        }
+        this.redirectToAdmin()
     }
 
     onChangeFile(e) {
@@ -52,12 +81,46 @@ class XlsButtonSubdivisions extends React.Component {
         readFile.readAsBinaryString(e.target.files[0]);
 
     }
-
+    redirectToAdmin(){
+        history.push('/adminPanel');
+        document.location.href="/adminPanel";
+    }
+    closeHandle(){
+        this.setState({passwordDivOpened : false})
+    }
+    openHandle(){
+        this.setState({passwordDivOpened : true})
+    }
     render() {
         return (
-            <div className="d-flex" style={{marginTop:'15px', marginLeft:'-15px', marginBottom:'10px'}}>
+            <div style={{justifyContent: "left", display:"grid", marginTop:'15px', marginLeft:'-15px', marginBottom:'10px'}}>
+                <ReactModal
+                ariaHideApp={false}
+                onRequestClose={this.closeHandle}
+                isOpen={this.state.passwordDivOpened}
+                style={customPasswordDivStyles}>
+                    <div className="container-fluid">
+                        <div className="row form-group modal-header">
+                            <h3 className="newLabel"> Проверка доступа </h3>
+                        </div>
+                        <div className="container-fluid">
+                            <div className="ml-auto mr-auto row form-group"> 
+                                <label htmlFor="pswd"><small style={{color: "#767676"}}>Для перехода по ссылке введите пароль доступа</small></label>
+                                {this.state.isPswd && <small className="ml-auto mr-0" style={{lineHeight: "30px", color: "#f11010"}}>{this.state.isPswd}</small>}
+                                <input type="password" className="form-control" id="pswd" placeholder="Введите пароль" ref="pswd"/>
+                            </div>
+                            <div className="mt-4 row form-group"> 
+                                <div className="ml-auto mr-auto">
+                                    <a href="/adminPanel"> </a>
+                                    <button className="mr-0  btn btn-primary btnModal change"  onClick={this.access}>Перейти</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ReactModal>
                 <input type="file" id="file"  accept=".xls,.xlsx" ref="fileUploader" style={{display: "none"}} onChange={this.onChangeFile.bind(this)}/>
-                <button disabled className="btn btn-primary btnModal excel" onClick={this.handleClick}><span>Обновить подразделения </span><FontAwesomeIcon icon="file-excel" /></button>
+                <button style={{marginBottom: "10px"}} disabled className="btn btn-primary btnModal excel" onClick={this.handleClick}><span>Обновить подразделения </span><FontAwesomeIcon icon="file-excel" /></button>
+                <button className="btn btn-primary btnModal excel" onClick={this.openHandle}><span>Панель управления </span><FontAwesomeIcon icon="tools" /></button>
             </div>
         )
     }
@@ -70,7 +133,7 @@ function mapStateToProps(state) {
     return {
         subdivisions
     };
-  }
+}
   
   const connectedXlsButtonSubdivisions = connect(mapStateToProps)(XlsButtonSubdivisions);
   export { connectedXlsButtonSubdivisions as  XlsButtonSubdivisions};

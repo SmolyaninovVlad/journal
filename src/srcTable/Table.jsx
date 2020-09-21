@@ -13,24 +13,34 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const { SearchBar } = Search;
 var $ = require("jquery");
+
 class Table extends React.Component {
     constructor(props){
         super(props);
         document.title = "Журнал мониторинга изменений законодательства";
         this.state = {
-          scroll: true
+          scroll: true,
+          showArchive: false
         }        
         this.props.dispatch(userActions.getSubdivisions());
         this.props.dispatch(userActions.getActs());        
         this.getActs = this.getActs.bind(this);
         this.handleDataChange = this.handleDataChange.bind(this)
+        this.rowStyleFunction = this.rowStyleFunction.bind(this)
+        this.handleClick = this.handleClick.bind(this)
     }
 
   rowEvents = {
     onClick: (e, row, rowIndex) => {
-      this.props.dispatch({type: "SHOW_MODAL", row: row, rowIndex: rowIndex})        
+      //нажата кнопка копирования строки
+      if (e.target.closest('.copyBtn')) this.props.dispatch({type: "CREATE_MODAL", row: row, rowIndex: rowIndex}) 
+      else this.props.dispatch({type: "SHOW_MODAL", row: row, rowIndex: rowIndex})  
     }
   };
+
+  handleClick(){
+    this.setState({showArchive: !this.state.showArchive})
+  }
 
   handleDataChange (dataSize ){
     if (!this.state.scroll) return
@@ -69,6 +79,14 @@ class Table extends React.Component {
     return acts
   }
 
+  rowStyleFunction(row){
+    if (!row.IsArchive) return {};
+
+    if (this.state.showArchive) {
+      return { backgroundColor: "rgba(244, 255, 111, 0.33)" }
+    } else return { display: "none" }
+  }
+  
 
   render() { 
     let acts = this.getActs()
@@ -78,9 +96,14 @@ class Table extends React.Component {
       <div className="container-fluid" style={{ padding:10, marginTop: 150 }}>    
         <XlsButton/> 
         <XlsButtonSubdivisions/>
+        <div className="custom-control custom-checkbox" style={{position: "absolute", right: "10px"}} onClick={this.handleClick}>
+            <input type="checkbox" className="float-right custom-control-input" name="showArchive" onChange={this.handleClick} checked={this.state.showArchive}/>
+            <label className="custom-control-label" htmlFor="showArchive">Архивные записи</label>
+        </div>      
         {acts && this.props.subdivisions.length?  (
           <div className="row">            
             <ToolkitProvider
+              bootstrap4
               striped
               search={ {
                 onColumnMatch
@@ -90,14 +113,12 @@ class Table extends React.Component {
               data={ acts }
               columns={ columns(acts, this.props.subdivisions) }               
               headerStyle={this.state.headerStyle}
-              
             >
               {
                 props => (
                   <div className="mx-auto">              
-                    <Form_modal/>                           
-                    <SearchBar placeholder ="Поиск"  delay = "800" { ...props.searchProps }/>
-                    {/* <ClearSearchButton { ...props.searchProps } /> */}
+                    <Form_modal/>                   
+                    <SearchBar placeholder ="Поиск"  delay = {800} { ...props.searchProps }/>
                     <div className="tableTitle d-flex">
                       <div className="firstBlock">
                         <span>Нормативно-правовые акты, в т.ч. Письма, рекомендации, разъяснения и т.п.</span>
@@ -107,8 +128,10 @@ class Table extends React.Component {
                       </div>
                     </div>  
                     <BootstrapTable
-                      keyField='id' 
+                      keyField='id'
+                      
                       { ...props.baseProps }
+                      rowStyle={  this.rowStyleFunction  }
                       rowEvents={ this.rowEvents }
                       onTableChange={ this.onTableChange }
                       onDataSizeChange={ this.handleDataChange }
